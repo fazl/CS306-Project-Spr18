@@ -1,0 +1,19 @@
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Intellij
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+**/.idea/find.xml
+**/.idea/*.iml
+**/.idea/*.iws
+
+
+# Mac
+.DS_Store
+
+# Maven
+log/
+target/
