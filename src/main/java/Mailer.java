@@ -17,7 +17,7 @@ public class Mailer {
     private static Logger LOG = Logger.getLogger(Mailer.class);
 
 
-    static boolean sendMailConfirms=System.getProperty("sendMailConfirms", "true").equalsIgnoreCase("true");
+    static boolean sendMailConfirms=System.getProperty("sendMailConfirms", "false").equalsIgnoreCase("true");
     private static String ADMIN_MAIL = System.getProperty("ADMIN_MAIL","mailfaz@gmail.com");
 //    private static String ADMIN_MAIL = System.getProperty("ADMIN_MAIL","fazl.rahman@rat-allianz.com,alan.dalmon@rat-allianz.com");
     private static String MAILHOST   = System.getProperty("MAILHOST","ZH-SMTP-01.rat-allianz.com");
