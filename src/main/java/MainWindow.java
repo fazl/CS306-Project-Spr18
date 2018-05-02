@@ -38,8 +38,7 @@ public class MainWindow {
     private static final String DBCONN_PROD = "jdbc:jtds:sqlserver://RAT-SQL-RMS.rat-allianz.com:1433/master;maxStatements=0";
     private static final String AUTH_CONN_SUFFIX = ";useNTLMv2=tru‌​e;domain=RAT-ALLIANZ";
 
-    private final EdmRdmFilterWithBaks edmRdmFilterWithBaks = new EdmRdmFilterWithBaks();
-    private final EdmRdmFilterNoBaks edmRdmFilterNoBaks = new EdmRdmFilterNoBaks();
+    private final MdfFilter mdfFilter = new MdfFilter();
 
     private String getUniversalSqlServerTempBakFileDir(String destSmbUrl) {
 
@@ -182,7 +181,7 @@ public class MainWindow {
                         //accept single file
                         File file = droppedFiles.get(0);
                         String dropped = file.getAbsolutePath();
-                        if(edmRdmFilterWithBaks.accept(file)){
+                        if(mdfFilter.accept(file)){
                             log("Dropped in: "+ dropped);
                             txtInputPathName.setText(dropped);
                         }else{
@@ -260,7 +259,7 @@ public class MainWindow {
         int origSize = batchModel.size();
         for (File file : candidateFiles) {
             //accept batch-compatible files only
-            if(edmRdmFilterNoBaks.accept(file)){
+            if(mdfFilter.accept(file)){
                 offerFileToBatch(file, batchModel);
             }else{
                 log("Batch rejects: "+file.getAbsolutePath());
@@ -275,42 +274,11 @@ public class MainWindow {
         JOptionPane.showMessageDialog(mainPanel, message, "Information", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    class EdmRdmFilterWithBaks extends FileFilter {
+
+    class MdfFilter extends FileFilter {
 
         public String getDescription(){
-            return "EDM or RDM databases (ending in MDF or BAK)";
-        }
-
-        public boolean accept( File f ) {
-            if( f == null ){
-                return false;
-            }
-            if (f.isDirectory()) {
-                return true;
-            }
-
-            String extension = FilenameUtils.getExtension(f.getName());
-
-            if( extension.equalsIgnoreCase("mdf") ||
-                extension.equalsIgnoreCase("bak")    ){
-
-                String baseName = FilenameUtils.getBaseName(f.getName());
-
-                if( StringUtils.containsIgnoreCase(baseName,"EDM") ||
-                    StringUtils.containsIgnoreCase(baseName,"RDM")    ){
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
-    // Temporary - till batches support BAK files
-    class EdmRdmFilterNoBaks extends FileFilter {
-
-        public String getDescription(){
-            return "EDM or RDM databases (only *.MDF for batches)";
+            return "Any old *.MDF files for batches";
         }
 
         public boolean accept( File f ) {
@@ -322,11 +290,7 @@ public class MainWindow {
             }
 
             if( FilenameUtils.getExtension(f.getName()).equalsIgnoreCase("mdf") ){
-                String baseName = FilenameUtils.getBaseName(f.getName());
-                if( StringUtils.containsIgnoreCase(baseName,"EDM") ||
-                    StringUtils.containsIgnoreCase(baseName,"RDM")    ){
-                    return true;
-                }
+                return true;
             }
             return false;
         }
@@ -569,7 +533,7 @@ public class MainWindow {
             // Add convenience filters
             fc.setFileFilter(new FileNameExtensionFilter("BAK files", "bak"));
             fc.setFileFilter(new FileNameExtensionFilter("MDF files", "mdf"));
-            fc.setFileFilter(chkBatchMode.isSelected() ? edmRdmFilterNoBaks : edmRdmFilterWithBaks);
+//            fc.setFileFilter(mdfFilter); Don't need it here, but it's used for dragdrop and garbage filtering batch
             if( fc.showOpenDialog(mainPanel) == JFileChooser.APPROVE_OPTION ){
                 File[] files = fc.getSelectedFiles();
 
@@ -1114,6 +1078,9 @@ public class MainWindow {
         }
         return false;
     }
+    // Bad search - whole list every time.
+    // TODO Easy optimisation available.
+    //
     boolean containsFileOfDifferentType( String extension, Enumeration<String> elements){
         while( elements.hasMoreElements()  ){
             if( !FilenameUtils.getExtension(elements.nextElement()).equalsIgnoreCase(extension) ){
@@ -1122,12 +1089,7 @@ public class MainWindow {
         }
         return false;
     }
-//    private String getUncDestination(){
-//        String name = destsCombo.getSelectedItem().toString();
-//        String uncPath = uncCopyDests.get(destsCombo.getSelectedItem());
-//
-//        return uncPath;
-//    }
+
     // Enable secure copy button iff source MDF AND username supplied
     // Simple copy button just needs a source
     // Enable unzip button if a zip file selected
@@ -1149,33 +1111,11 @@ public class MainWindow {
         boolean mdfInBatch = containsFileOfType("MDF", batchModel.elements());
         boolean bakInBatch = containsFileOfType("BAK", batchModel.elements());
 
-//        attachDatabaseButton.setEnabled( gotCreds && mdfSelected );
         installDatabaseButton.setEnabled( gotCreds &&
             chkBatchMode.isSelected() ? (mdfInBatch || bakInBatch) : (mdfSelected || bakSelected)
         );
 
-//        secureCopyButton.setEnabled( gotCreds &&
-//            !txtInputPathName.getText().trim().isEmpty()
-//        );
-
-//        simpleCopyButton.setEnabled(
-//            !txtInputPathName.getText().trim().isEmpty()
-//        );
-
-//        restoreBAKButton.setEnabled( gotCreds && bakSelected );
     }
-
-//    String getFirstLine( String text ){
-//        if( StringUtils.isBlank(text)){
-//            return "";
-//        }
-//        final int newlinePos = text.indexOf('\n');
-//        if( 0 <= newlinePos ){ // -1 == NOT FOUND
-//            return text.substring(0,newlinePos+1);
-//        }else{
-//            return text;
-//        }
-//    }
 
     // Simple copy approach (normal FileInputStream etc) only works if destination
     // network path already connected with credentials eg via explorer, when 'net use' command shows eg:
